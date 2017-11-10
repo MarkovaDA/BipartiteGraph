@@ -40,13 +40,15 @@ public class GraphStructure {
     //строим процедуру по матрице
     private void buildGraph(/*int[][] matrix*/) {
         //по сути собираем независимые единицы
+        s = new int[]{0,1,0,0,0};
+        t = new int[]{0,1,0,1,0};
         coverMatrix = new int[][]
         {
-            {0,1,0,1,0},
+            {0,0,0,0,0},
             {0,0,0,1,0},
-            {0,1,0,0,1},
-            {1,0,1,0,1},
-            {0,1,1,0,0}
+            {0,1,0,-1,0},
+            {1,0,0,0,0},
+            {0,0,0,0,0}
         };
     }
     
@@ -83,7 +85,7 @@ public class GraphStructure {
             if (col >= 0) {
                 pathEdges.add(new Edge(index, col, true));
                 occupiedMatrix[index][col] = true;
-                if  (!IsThereExit(col))
+                if  (!IsThereExit(col)) 
                     findWay(col, false, true);
             }
             //не нашли - ищем обратную дугу
@@ -108,7 +110,7 @@ public class GraphStructure {
                 if  (!IsThereExit(row))
                     findWay(row, true, true);
             }
-            //не нашли - ищем обратнуюу дугу
+            //не нашли - ищем обратнуюу дугу 
             else {
                 row = findNodeInCol(index, -1);
                 if (row >= 0) {
@@ -150,7 +152,10 @@ public class GraphStructure {
         pathEdges.stream().forEach((edge) -> {
             int row = edge.getNodeStart();
             int col = edge.getNodeEnd();
-            coverMatrix[row][col] = -1*coverMatrix[row][col]; 
+            if (edge.isDirect())
+                coverMatrix[row][col] = -1*coverMatrix[row][col]; 
+            else 
+                coverMatrix[col][row] = -1*coverMatrix[col][row]; 
         });       
     }
     
