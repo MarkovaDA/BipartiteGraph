@@ -11,8 +11,7 @@ import java.util.List;
  */
 public class GraphStructure {
     private int size;
-    private int coverMatrix[][];
-    private int coverDiagonal[];
+    private int[][] coverXMatrix, coverYMatrix;
     private boolean occupiedMatrix[][];
     private int s[];//начало графа
     private int t[];//конец графа
@@ -20,7 +19,8 @@ public class GraphStructure {
     private List<Edge> totalEdges;
     GraphStructure(int size) {
         this.size = size;
-        this.coverMatrix = new int[size][size];
+        this.coverXMatrix = new int[size][size];
+        this.coverYMatrix = new int[size][size];
         occupiedMatrix = new boolean[size][size];
         this.s = new int[size];
         this.t = new int[size];
@@ -29,25 +29,35 @@ public class GraphStructure {
         Arrays.fill(s,1);
         Arrays.fill(t,1);
         buildGraph();
+        //две матрицы связности - XY и YX
         //initCoverMatrix();
     }
     
     private void initCoverMatrix() {
         for(int i=0; i < size; i++)
-            Arrays.fill(coverMatrix[i],0);
+            Arrays.fill(coverXMatrix[i],0);
     }
     
     //строим процедуру по матрице
     private void buildGraph(/*int[][] matrix*/) {
-        //по сути собираем независимые единицы
-        s = new int[]{0,1,0,0,0};
-        t = new int[]{0,1,0,1,0};
-        coverMatrix = new int[][]
+        //s = new int[]{0,1,0,0,0};
+        //t = new int[]{0,1,0,0,0};
+        //как связаны X и Y
+        coverXMatrix = new int[][]
+        {
+            {1,0,1,0,1},
+            {0,0,1,0,0},
+            {0,0,0,0,1},
+            {1,0,0,1,0},
+            {0,1,0,0,0}
+        };
+        //как связаны Y и X
+        coverYMatrix = new int[][]
         {
             {0,0,0,0,0},
-            {0,0,0,1,0},
-            {0,1,0,-1,0},
-            {1,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
             {0,0,0,0,0}
         };
     }
@@ -76,11 +86,11 @@ public class GraphStructure {
         }
         return false;
     }
+    
     void findWay(int index, boolean isRow, boolean isDistrict) {
         //работаем со строкой
         if (isRow) {         
-            //ищем в строке колонку со значением 1 (или -1)
-            int col = findNodeInRow(index, 1);
+            int col = findStrictEdge(index, true);
             //нашли - прямая дуга
             if (col >= 0) {
                 pathEdges.add(new Edge(index, col, true));
@@ -90,7 +100,7 @@ public class GraphStructure {
             }
             //не нашли - ищем обратную дугу
             else {
-                col = findNodeInRow(index, -1);
+                col = findBackEdge(index, true);
                 //нашли обратную дугу
                 if (col >=0) {
                     pathEdges.add(new Edge(col, index, false));
@@ -102,7 +112,7 @@ public class GraphStructure {
         }
         //работаем с колонкой
         else {
-            int row = findNodeInCol(index, 1);
+            int row = findStrictEdge(index, false);
             //нашли - прямая дуга
             if (row >=0) {
                 pathEdges.add(new Edge(row, index, true));
@@ -112,7 +122,7 @@ public class GraphStructure {
             }
             //не нашли - ищем обратнуюу дугу 
             else {
-                row = findNodeInCol(index, -1);
+                row = findBackEdge(index, false);
                 if (row >= 0) {
                     pathEdges.add(new Edge(index, row, false));
                     occupiedMatrix[row][index] = true;
@@ -129,33 +139,55 @@ public class GraphStructure {
         }
     }
     
-    private int findNodeInRow(int row, int val) {
-        for(int i=0; i < size; i++) {
-            if (coverMatrix[row][i] == val && !occupiedMatrix[row][i]) {
-                return i;
+    private int findStrictEdge(int index, boolean isRow) {
+       if (isRow) {
+            for(int i=0; i < size; i++) {
+                if (coverXMatrix[index][i] == 1 && !occupiedMatrix[index][i]) {
+                    return i;
+                }
             }
-        }
-        return -1;
+       }
+       else {
+            for(int i=0; i < size; i++) {
+                if (coverXMatrix[i][index] == 1 && !occupiedMatrix[i][index]) {
+                    return i;
+                }
+            }
+       }
+       return -1;
     }
     
-    private int findNodeInCol(int col, int val) {
-        for(int i=0; i < size; i++) {
-            if (coverMatrix[i][col] == val && !occupiedMatrix[i][col]) {
-                return i;
+    private int findBackEdge(int index, boolean isRow) {
+       if (isRow) {
+            for(int i=0; i < size; i++) {
+                if (coverYMatrix[index][i] == 1 && !occupiedMatrix[index][i]) {
+                    return i;
+                }
             }
-        }
-        return -1;
+       }
+       else {
+            for(int i=0; i < size; i++) {
+                if (coverYMatrix[i][index] == 1 && !occupiedMatrix[i][index]) {
+                    return i;
+                }
+            }
+       }
+       return -1;
     }
-    
     //обращение ребер
     private void reverseEdges() {
         pathEdges.stream().forEach((edge) -> {
             int row = edge.getNodeStart();
             int col = edge.getNodeEnd();
-            if (edge.isDirect())
-                coverMatrix[row][col] = -1*coverMatrix[row][col]; 
-            else 
-                coverMatrix[col][row] = -1*coverMatrix[col][row]; 
+            if (edge.isDirect()) {
+                coverXMatrix[row][col] = 0; 
+                coverYMatrix[row][col] = 1;
+            }
+                
+            else {
+                coverYMatrix[col][row] = 0; 
+                coverXMatrix[col][row] = 1;
+            }
         });       
     }
     
