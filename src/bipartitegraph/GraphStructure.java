@@ -12,6 +12,7 @@ import java.util.List;
 public class GraphStructure {
     private int size;
     private int coverMatrix[][];
+    private int coverDiagonal[];
     private boolean occupiedMatrix[][];
     private int s[];//начало графа
     private int t[];//конец графа
@@ -38,19 +39,18 @@ public class GraphStructure {
     
     //строим процедуру по матрице
     private void buildGraph(/*int[][] matrix*/) {
+        //по сути собираем независимые единицы
         coverMatrix = new int[][]
         {
+            {0,1,0,1,0},
+            {0,0,0,1,0},
+            {0,1,0,0,1},
             {1,0,1,0,1},
-            {0,0,1,0,0},
-            {0,0,0,0,1},
-            {1,0,0,1,0},
-            {0,1,0,0,0}
+            {0,1,1,0,0}
         };
     }
     
     void independentZeros() {
-        findWay(1, true, true);
-        
         for(int i=0; i < size; i++) {
             if (s[i] == 1) {
                 findWay(i, true, true);
@@ -67,33 +67,36 @@ public class GraphStructure {
     void clearOccupiedMatrix() {
         occupiedMatrix = new boolean[size][size];
     }
+    boolean IsThereExit(int index) {
+        if (t[index] == 1) {
+            t[index] = 0;
+            return true;
+        }
+        return false;
+    }
     void findWay(int index, boolean isRow, boolean isDistrict) {
         //работаем со строкой
         if (isRow) {         
-            //выход уже есть
-            if (t[index] == 1 && !isDistrict) {
-                t[index] = 0;//закрываем выход
-            }
-            else {
-                //ищем в строке колонку со значением 1 (или -1)
-                int col = findNodeInRow(index, 1);
-                //нашли - прямая дуга
-                if (col >= 0) {
-                    pathEdges.add(new Edge(index, col, true));
-                    occupiedMatrix[index][col] = true;
+            //ищем в строке колонку со значением 1 (или -1)
+            int col = findNodeInRow(index, 1);
+            //нашли - прямая дуга
+            if (col >= 0) {
+                pathEdges.add(new Edge(index, col, true));
+                occupiedMatrix[index][col] = true;
+                if  (!IsThereExit(col))
                     findWay(col, false, true);
-                }
-                //не нашли - ищем обратную дугу
-                else {
-                    col = findNodeInRow(index, -1);
-                    //нашли обратную дугу
-                    if (col >=0) {
-                        pathEdges.add(new Edge(col, index, false));
-                        occupiedMatrix[index][col] = true;
-                        findWay(col, false, false);
-                    }
-                }                
             }
+            //не нашли - ищем обратную дугу
+            else {
+                col = findNodeInRow(index, -1);
+                //нашли обратную дугу
+                if (col >=0) {
+                    pathEdges.add(new Edge(col, index, false));
+                    occupiedMatrix[index][col] = true;
+                    findWay(col, false, false);
+                }
+            }                
+
         }
         //работаем с колонкой
         else {
@@ -102,7 +105,8 @@ public class GraphStructure {
             if (row >=0) {
                 pathEdges.add(new Edge(row, index, true));
                 occupiedMatrix[row][index] = true;
-                findWay(row, true, true);
+                if  (!IsThereExit(row))
+                    findWay(row, true, true);
             }
             //не нашли - ищем обратнуюу дугу
             else {
